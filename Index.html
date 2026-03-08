@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SenadaSong Request</title>
+
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@500&family=Poppins:wght@300;400;600&display=swap');
+*{box-sizing:border-box}
+
+body{
+  margin:0;
+  min-height:100vh;
+  background:
+    radial-gradient(circle at top,#ff00cc,transparent 40%),
+    radial-gradient(circle at bottom,#3333ff,transparent 40%),
+    #050510;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  font-family:Poppins;
+  color:#fff;
+  padding:20px;
+}
+
+/* TEKS DI LUAR KOTAK */
+.header-text{
+  font-family:Orbitron;
+  font-size:16px;
+  margin-bottom:14px;
+  text-align:center;
+  opacity:.9;
+  text-shadow:0 0 10px #ff00cc;
+}
+
+.card{
+  width:100%;
+  max-width:440px;
+  background:rgba(255,255,255,.08);
+  backdrop-filter:blur(18px);
+  border-radius:22px;
+  padding:22px;
+  box-shadow:0 0 40px rgba(255,0,200,.25);
+}
+
+.title{
+  font-family:Orbitron;
+  text-align:center;
+  font-size:22px;
+  margin-bottom:12px;
+  text-shadow:0 0 12px #ff00cc;
+}
+
+.input{
+  width:100%;
+  padding:14px;
+  margin-bottom:12px;
+  border-radius:14px;
+  border:1px solid rgba(255,255,255,.15);
+  background:rgba(0,0,0,.45);
+  color:#fff;
+}
+
+.btn{
+  width:100%;
+  padding:14px;
+  border:none;
+  border-radius:16px;
+  background:linear-gradient(135deg,#ff00cc,#3333ff);
+  color:white;
+  font-weight:600;
+  cursor:pointer;
+}
+
+.btn.red{background:#ff4444}
+.btn.blue{background:#4444ff}
+
+.link{
+  text-align:center;
+  font-size:12px;
+  opacity:.8;
+  cursor:pointer;
+}
+
+.list{
+  margin-top:15px;
+  max-height:260px;
+  overflow:auto;
+}
+
+.song{
+  background:linear-gradient(135deg,rgba(255,0,200,.15),rgba(50,50,255,.15));
+  border-radius:14px;
+  padding:12px;
+  margin-bottom:8px;
+  position:relative;
+  animation:pop .3s;
+}
+
+.song.checked{
+  background:linear-gradient(135deg,rgba(0,255,0,.15),rgba(50,255,50,.15));
+}
+
+.song span{
+  font-size:11px;
+  opacity:.7;
+}
+
+.del{
+  position:absolute;
+  top:8px;
+  right:10px;
+  background:#ff4444;
+  border:none;
+  color:white;
+  font-size:10px;
+  padding:4px 8px;
+  border-radius:10px;
+  cursor:pointer;
+}
+
+.check{
+  position:absolute;
+  top:8px;
+  right:70px;
+  background:#44ff44;
+  border:none;
+  color:white;
+  font-size:10px;
+  padding:4px 8px;
+  border-radius:10px;
+  cursor:pointer;
+}
+
+.footer{
+  text-align:center;
+  font-size:11px;
+  opacity:.6;
+  margin-top:12px;
+}
+
+@keyframes pop{
+  from{transform:scale(.85);opacity:0}
+  to{transform:scale(1);opacity:1}
+}
+</style>
+</head>
+<body>
+
+<!-- TEKS DI ATAS LOGIN (LUAR KOTAK) -->
+<div class="header-text">Senadasong © School Audio</div>
+
+<div class="card">
+
+<!-- LOGIN -->
+<div id="loginBox">
+  <div class="title">LOGIN</div>
+  <input class="input" id="loginUser" placeholder="Username">
+  <input class="input" id="loginPass" type="password" placeholder="Password">
+  <button class="btn" onclick="login()">Login</button>
+  <div class="link" onclick="showSignup()">Belum punya akun? Sign Up</div>
+</div>
+
+<!-- SIGNUP -->
+<div id="signupBox" style="display:none">
+  <div class="title">SIGN UP</div>
+  <input class="input" id="suUser" placeholder="Username">
+  <input class="input" id="suPass" type="password" placeholder="Password">
+  <button class="btn" onclick="signup()">Buat Akun</button>
+  <div class="link" onclick="showLogin()">Sudah punya akun? Login</div>
+</div>
+
+<!-- APP -->
+<div id="appBox" style="display:none">
+  <div class="title" id="appTitle">🎧 REQUEST LAGU</div>
+
+  <input class="input" id="lagu" placeholder="Judul lagu">
+  <button class="btn" onclick="kirim()">Kirim Request</button>
+
+  <div id="adminBtn" style="display:none">
+    <button class="btn blue" onclick="toggleAdminView()">Admin Panel</button>
+  </div>
+
+  <div class="list" id="list"></div>
+
+  <br>
+  <button class="btn red" onclick="logout()">Logout</button>
+  <div class="footer">By Senadasong</div>
+</div>
+
+</div>
+
+<script>
+const ADMINS = [
+  {user: "Senadasong", pass: "Team Senada"},
+  {user: "Admin", pass: "adminn"}
+];
+
+let users = JSON.parse(localStorage.getItem("users")) || {};
+let requests = JSON.parse(localStorage.getItem("requests")) || [];
+
+let currentUser = localStorage.getItem("loginUser");
+let isAdmin = localStorage.getItem("isAdmin") === "true";
+let adminView = false;
+
+if(currentUser) showApp();
+
+function showSignup(){ loginBox.style.display="none"; signupBox.style.display="block"; }
+function showLogin(){ signupBox.style.display="none"; loginBox.style.display="block"; }
+
+function signup(){
+  const u = suUser.value.trim();
+  const p = suPass.value.trim();
+  if(!u||!p) return alert("Isi semua!");
+  if(Object.keys(users).length >= 5) return alert("Maksimal 5 akun!");
+  if(ADMINS.some(a => a.user === u)) return alert("Username tidak tersedia!");
+  if(users[u]) return alert("Username sudah ada!");
+  users[u]=p;
+  localStorage.setItem("users",JSON.stringify(users));
+  alert("Akun dibuat!");
+  showLogin();
+}
+
+function login(){
+  const u=loginUser.value.trim();
+  const p=loginPass.value.trim();
+
+  const admin = ADMINS.find(a => a.user === u && a.pass === p);
+  if(admin){
+    localStorage.setItem("loginUser",u);
+    localStorage.setItem("isAdmin","true");
+    currentUser=u; isAdmin=true;
+    showApp(); return;
+  }
+
+  if(users[u]!==p) return alert("Login gagal!");
+  localStorage.setItem("loginUser",u);
+  localStorage.setItem("isAdmin","false");
+  currentUser=u; isAdmin=false;
+  showApp();
+}
+
+function logout(){
+  localStorage.removeItem("loginUser");
+  localStorage.removeItem("isAdmin");
+  location.reload();
+}
+
+function showApp(){
+  loginBox.style.display="none";
+  signupBox.style.display="none";
+  appBox.style.display="block";
+  appTitle.innerText = adminView ? "🎛️ ADMIN PANEL" : "🎧 REQUEST LAGU";
+  if(isAdmin) adminBtn.style.display="block";
+  render();
+}
+
+function toggleAdminView(){
+  adminView = !adminView;
+  appTitle.innerText = adminView ? "🎛️ ADMIN PANEL" : "🎧 REQUEST LAGU";
+  render();
+}
+
+function kirim(){
+  const lagu = document.getElementById("lagu").value.trim();
+  if(!lagu) return alert("Judul kosong!");
+  requests.unshift({lagu, user:currentUser, checked:false});
+  localStorage.setItem("requests",JSON.stringify(requests));
+  document.getElementById("lagu").value = "";
+  render();
+}
+
+function check(i){
+  if(!isAdmin) return;
+  requests[i].checked = !requests[i].checked;
+  localStorage.setItem("requests",JSON.stringify(requests));
+  render();
+}
+
+function hapus(i){
+  if(!isAdmin && requests[i].user !== currentUser) return alert("Hanya bisa hapus milik sendiri!");
+  requests.splice(i,1);
+  localStorage.setItem("requests",JSON.stringify(requests));
+  render();
+}
+
+function render(){
+  list.innerHTML="";
+  const displayRequests = adminView || isAdmin ? requests : requests.filter(r => r.user === currentUser);
+  displayRequests.forEach((r,i)=>{
+    const div=document.createElement("div");
+    div.className="song" + (r.checked ? " checked" : "");
+    const canDelete = isAdmin || r.user === currentUser;
+    const canCheck = isAdmin;
+    div.innerHTML=`
+      <b>🎵 ${r.lagu}</b>
+      <span>Request by ${r.user} ${r.checked ? '(Checked)' : ''}</span>
+      ${canCheck?`<button class="check" onclick="check(${i})">${r.checked ? 'Uncheck' : 'Check'}</button>`:""}
+      ${canDelete?`<button class="del" onclick="hapus(${i})">Hapus</button>`:""}
+    `;
+    list.appendChild(div);
+  });
+}
+</script>
+
+</body>
+</html>
